@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3 months :)</title>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Nunito:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/*  HOW TO USE
+    - Password is "baby" (change PASSWORD near the bottom of the script).
+    - The intro terminal plays your story + cryptic; solving it gives the password.
+    - Background: the 3 covers live in covers/. Swap for higher-res, same names.
+    - Photos: drop files in photos/ named us-1.jpg ... us-9.jpg and
+      someday-1.jpg ... someday-5.jpg. The paths are already wired below.
+    - Captions: edit the text in each <div class="cap"> and the sticky notes.
+    - Drag anything on the board. Click the letter to open it full-screen.
+    - One screen, no scrolling. Sized for a 13" MacBook, baked to 80%.
+*/
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Nunito',sans-serif;font-size:15px;color:#3a3a3a;background:#0b0f14}
+
+:root{--scale:.8}
+.board{position:relative;width:calc(100vw/var(--scale));height:calc(100vh/var(--scale));
+  overflow:hidden;background:#1f2a35;transform:scale(var(--scale));transform-origin:0 0}
+
+/* comic cover collage */
+.covers{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr 1fr;pointer-events:none}
+.covers div{background-position:center;background-size:cover;background-repeat:no-repeat;
+  box-shadow:inset 0 0 0 3px #efe7d6, inset 0 0 60px 10px rgba(0,0,0,.45);filter:contrast(1.08) saturate(.92)}
+.covers::after{content:'';position:absolute;inset:0;background:rgba(18,22,30,.15)}
+
+/* rough overlays */
+.grain{position:absolute;inset:0;pointer-events:none;opacity:.07;mix-blend-mode:overlay;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.vignette{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center, transparent 52%, rgba(8,11,16,.6) 100%)}
+
+/* small screens: just say no */
+.nope{display:none}
+@media (max-width:1000px){
+  .board,#lock{display:none!important}
+  .nope{display:grid;place-items:center;height:100vh;font-family:'Nunito',sans-serif;font-size:1.5rem;text-align:center;padding:2rem;background:#e8e3d6;color:#3a3a3a}
+}
+
+/* -------- title -------- */
+.title{
+  font-family:'Caveat',cursive;font-size:4.2rem;line-height:.9;color:#2f4a63;
+  background:#fffdf8;padding:6px 18px;box-shadow:4px 5px 0 rgba(0,0,0,.35);
+  transform:rotate(-3.5deg);display:inline-block;
+  text-decoration:underline wavy #e0a458 4px;text-underline-offset:9px;
+}
+
+/* -------- draggable bits -------- */
+.drag{position:absolute;cursor:grab;user-select:none;touch-action:none}
+.drag:active{cursor:grabbing;z-index:60}
+
+.pol{
+  background:#fffdf8;padding:8px 8px 28px;width:150px;
+  box-shadow:3px 4px 0 rgba(0,0,0,.28), 0 12px 22px -8px rgba(0,0,0,.55);
+  transform:rotate(var(--r,0deg));
+}
+.pol.big{width:190px}.pol.small{width:115px}
+.pol .ph{
+  width:100%;aspect-ratio:1;background:#e3e7ea;display:grid;place-items:center;
+  color:#8e96a0;text-align:center;font-size:.8rem;line-height:1.2;overflow:hidden;
+  background-image:repeating-linear-gradient(45deg,transparent 0 9px,#d7dce1 9px 11px);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
+}
+.pol .ph img{width:100%;height:auto;display:none}
+.pol.filled .ph{background:none;aspect-ratio:auto;box-shadow:none}.pol.filled .ph img{display:block}
+.pol .cap{font-family:'Nunito',sans-serif;font-style:italic;font-size:.85rem;text-align:center;margin-top:6px;line-height:1.25;color:#4a4a4a}
+
+.tape{position:absolute;width:72px;height:22px;top:-11px;left:50%;transform:translateX(-50%) rotate(var(--t,-4deg));
+  background:rgba(224,164,88,.5);border-left:2px dashed rgba(255,255,255,.55);border-right:2px dashed rgba(255,255,255,.55);
+  box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.tape.blue{background:rgba(120,160,190,.5)}.tape.pink{background:rgba(230,150,160,.5)}
+
+.note{background:#fff3a3;width:180px;padding:12px 14px 16px;box-shadow:3px 4px 0 rgba(0,0,0,.3),0 10px 16px -8px rgba(0,0,0,.5);
+  transform:rotate(var(--r,2deg));font-size:.95rem;line-height:1.3}
+.note.blue{background:#cfe6f5}.note.pink{background:#ffd6dc}
+.note b{font-family:'Nunito',sans-serif;font-weight:700;font-size:1rem;margin-bottom:4px;display:block}
+
+/* letter opens full screen */
+.note.letter{cursor:pointer}
+.note.letter .hint{font-size:.75rem;color:#7a6a2a;margin-top:6px;font-style:italic}
+#letterFull{position:fixed;inset:0;z-index:200;display:none;place-items:center;padding:4vh 3vw;
+  background:rgba(8,11,16,.72);backdrop-filter:blur(2px);cursor:pointer}
+#letterFull.open{display:grid;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+#letterFull .paper{
+  background:#fffdf5;max-width:680px;width:100%;max-height:92vh;overflow:auto;
+  padding:clamp(24px,5vw,56px);box-shadow:8px 10px 0 rgba(0,0,0,.4),0 30px 60px -20px #000;
+  transform:rotate(-.6deg) scale(.94);animation:pop .22s ease forwards;
+  font-size:1.15rem;line-height:1.7;color:#2b2b2b}
+@keyframes pop{to{transform:rotate(-.6deg) scale(1)}}
+#letterFull .paper h2{font-family:'Caveat',cursive;font-size:2.6rem;color:#2f4a63;margin-bottom:.3em}
+#letterFull .paper p{margin:0 0 1em}
+#letterFull .paper .close{margin-top:1.4em;font-size:.85rem;color:#9a9a9a;font-style:italic}
+
+.stk{width:100px;transform:rotate(var(--r,0deg));filter:drop-shadow(1px 2px 0 rgba(0,0,0,.25))}
+.stk.sm{width:54px}.stk svg{width:100%;height:auto}
+
+.ticket{background:#2f4a63;color:#fff;padding:10px 18px;transform:rotate(3deg);font-family:'Caveat',cursive;font-size:1.2rem;line-height:1;
+  box-shadow:0 8px 16px -8px rgba(0,0,0,.6);
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,0 90%,3% 85%,0 80%,3% 75%,0 70%,3% 65%,0 60%,3% 55%,0 50%,3% 45%,0 40%,3% 35%,0 30%,3% 25%,0 20%,3% 15%,0 10%)}
+.ticket b{font-size:2.6rem;font-family:'Caveat',cursive;display:block;color:#ffd58a}
+
+.poke{cursor:pointer}
+.poke .msg{position:absolute;left:100%;top:6px;white-space:nowrap;background:#fff;padding:4px 10px;border-radius:20px;border:2px solid #3a3a3a;
+  font-family:'Nunito',sans-serif;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none}
+.poke.talk .msg{opacity:1}
+
+/* spotify */
+.spot{width:300px;background:#fffdf8;padding:9px 9px 7px;box-shadow:3px 4px 0 rgba(0,0,0,.3),0 10px 18px -8px rgba(0,0,0,.5);transform:rotate(-2deg)}
+.spot .tag{font-family:'Nunito',sans-serif;font-weight:700;font-size:.8rem;color:#2f4a63;margin-bottom:5px}
+.spot iframe{display:block;border-radius:10px;border:0}
+
+/* ---------- retro windows password ---------- */
+#lock{position:fixed;inset:0;z-index:500;background:#0a7d7d;overflow:hidden;
+  font-family:Tahoma,'MS Sans Serif',Geneva,sans-serif}
+#lock.hide{display:none}
+.win{position:absolute;width:340px;background:#c0c0c0;border:2px solid;border-color:#ffffff #000000 #000000 #ffffff;
+  box-shadow:2px 2px 0 #000, inset 1px 1px 0 #dfdfdf;padding:2px}
+.win .tb{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-weight:700;font-size:13px;
+  padding:3px 4px 3px 6px;display:flex;justify-content:space-between;align-items:center}
+.win .tb{cursor:move}
+.win .tb .x{width:16px;height:14px;background:#c0c0c0;color:#000;border:1px solid;
+  border-color:#ffffff #000000 #000000 #ffffff;display:grid;place-items:center;font-size:11px;line-height:1;cursor:default}
+.win .body{padding:16px 14px 12px}
+.win .body p{font-size:12px;margin-bottom:12px;color:#000}
+.win .row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.win .row label{font-size:12px;color:#000}
+.win .row input{flex:1;font-family:inherit;font-size:12px;padding:3px 4px;background:#fff;
+  border:2px solid;border-color:#000000 #ffffff #ffffff #000000;outline:none}
+.win .btns{display:flex;gap:8px;justify-content:center}
+.win .btns button{font-family:inherit;font-size:12px;min-width:74px;padding:4px 6px;background:#c0c0c0;
+  border:2px solid;border-color:#ffffff #000000 #000000 #ffffff;box-shadow:1px 1px 0 #000;cursor:pointer}
+.win .btns button:active{border-color:#000000 #ffffff #ffffff #000000;box-shadow:none}
+.win .err{font-size:11px;color:#a00000;margin-top:10px;text-align:center;min-height:14px}
+.win.shake{animation:sh .3s}
+@keyframes sh{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ---------- retro terminal ---------- */
+.term{position:absolute;left:3%;top:6%;width:52%;height:86%;background:#c0c0c0;
+  border:2px solid;border-color:#fff #000 #000 #fff;box-shadow:2px 2px 0 #000;padding:2px;display:flex;flex-direction:column}
+.term .tb{background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font-weight:700;font-size:13px;
+  padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
+.term .tb .x{width:16px;height:14px;background:#c0c0c0;color:#000;border:1px solid;border-color:#fff #000 #000 #fff;
+  display:grid;place-items:center;font-size:11px;line-height:1}
+.term .scr{flex:1;overflow-y:auto;background:#0a0a0a;color:#c9f7c9;font-family:'Courier New',ui-monospace,monospace;
+  font-size:13px;line-height:1.55;padding:10px 12px;white-space:pre-wrap;word-break:break-word}
+.term .scr .ln{white-space:pre-wrap;word-break:break-word;min-height:1em}
+.term .inrow{display:none;align-items:center;gap:8px;background:#0a0a0a;border-top:1px solid #123;
+  padding:6px 12px;font-family:'Courier New',ui-monospace,monospace;font-size:13px}
+.term .inrow.on{display:flex}
+.term #prompt{color:#7CFC00;white-space:nowrap}
+.term #tin{flex:1;background:transparent;border:0;outline:none;color:#c9f7c9;font-family:inherit;font-size:13px;caret-color:#7CFC00}
+.term #skip{color:#5a8f5a;font-size:11px;cursor:pointer;user-select:none}
+.term #skip:hover{color:#9fdca0}
+
+/* ---------- photo lightbox ---------- */
+#lightbox{position:fixed;inset:0;z-index:300;display:none;place-items:center;padding:4vh 4vw;
+  background:rgba(8,11,16,.85);backdrop-filter:blur(2px);cursor:zoom-out}
+#lightbox.open{display:grid;animation:fade .2s ease}
+#lightbox img{max-width:92vw;max-height:84vh;object-fit:contain;
+  background:#fffdf8;padding:10px;box-shadow:6px 8px 0 rgba(0,0,0,.4),0 30px 60px -20px #000;
+  transform:scale(.96);animation:pop2 .2s ease forwards}
+@keyframes pop2{to{transform:scale(1)}}
+#lightbox .cap{position:fixed;bottom:3vh;left:0;right:0;text-align:center;color:#f0ece0;
+  font-family:'Nunito',sans-serif;font-style:italic;font-size:1rem;text-shadow:0 1px 4px #000}
+.pol.filled .ph{cursor:zoom-in}
+</style>
+</head>
+<body>
+<div class="nope">open this on a laptop :)<br><small>(it doesn't fit on a phone)</small></div>
+
+<!-- ================= INTRO TERMINAL + PASSWORD ================= -->
+<div id="lock">
+  <div class="term">
+    <div class="tb"><span>C:\love\hey-p.exe</span><span class="x">&times;</span></div>
+    <div class="scr" id="scr"></div>
+    <div class="inrow" id="inrow"><span id="prompt">&gt;</span><input id="tin" autocomplete="off" spellcheck="false"><span id="skip" title="skip the waiting">skip ▸</span></div>
+  </div>
+
+  <div class="win" id="win" style="left:64%;top:22%">
+    <div class="tb" id="winbar"><span>Enter Password</span><span class="x">&times;</span></div>
+    <div class="body">
+      <p>Protected page. Solve the cryptic in the terminal,<br>That's the password.</p>
+      <div class="row"><label for="pw">Password:</label><input id="pw" type="password"></div>
+      <div class="btns"><button id="ok">OK</button><button id="cancel">Cancel</button></div>
+      <div class="err" id="err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= BOARD ================= -->
+<div class="board" id="board">
+  <div class="covers">
+    <div style="background-image:url('covers/chandamama.jpg')"></div>
+    <div style="background-image:url('covers/nagraj.jpg')"></div>
+    <div style="background-image:url('covers/sons-of-rama.jpg')"></div>
+  </div>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+
+  <!-- left column -->
+  <div style="position:absolute;left:1.5%;top:2.5%;z-index:2"><h1 class="title">3 months!!</h1></div>
+  <div class="drag ticket" style="left: 3.82292%; top: 16.6667%;"><b id="days">24</b>days<br><span id="range">until 1 Oct</span></div>
+  <div class="drag note" style="left: 14.3854%; top: 26.0701%; --r: -2deg;"><b>hey p</b><div>click on the images to enlarge. Drag them around to see the background. Click the animals.</div></div>
+  <div class="drag note blue" style="left: 88.2812%; top: 36.2393%; --r: 2deg;"><b>things I like about you</b><div>1. Your eyes<br>2. Your voice telling me about your day<br>3. Everything. Genuinely.</div></div>
+  <div class="drag spot" style="left: 1.70833%; top: 69.4217%;">
+    <div class="tag">Flights booked oct 1st baby</div>
+    <iframe src="https://open.spotify.com/embed/track/6Yj7Zhxt73uvwFFvzQXdxO?utm_source=generator&amp;theme=0" width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+  </div>
+
+  <!-- photo wall : us -->
+  <div class="drag pol big filled" style="left: 82.9896%; top: 6.32969%; --r: -2deg;"><span class="tape "></span><div class="ph"><img src="photos/us-1.jpg" alt=""></div><div class="cap">Pizza dateee</div></div>
+  <div class="drag pol filled" style="left: 20.25%; top: 0.68306%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/us-2.jpg" alt=""></div><div class="cap">Face maskkss</div></div>
+  <div class="drag pol small filled" style="left: 55.0625%; top: 11.316%; --r: 3deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-3.jpg" alt=""></div><div class="cap">Somone got posted!! me and my new freind</div></div>
+  <div class="drag pol filled" style="left: 48.1667%; top: 57.9235%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/us-4.jpg" alt=""></div><div class="cap">my snack</div></div>
+  <div class="drag pol big filled" style="left: 74%; top: 31.3752%; --r: -2deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-5.jpg" alt=""></div><div class="cap">My baby came back for my mods</div></div>
+  <div class="drag pol filled" style="left: 75.7917%; top: 75.3415%; --r: 3deg;"><span class="tape "></span><div class="ph"><img src="photos/us-6.jpg" alt=""></div><div class="cap">Meeting the mother... I look like im about to eat you</div></div>
+  <div class="drag pol filled" style="left: 87.8125%; top: 71.1749%; --r: -2deg;"><span class="tape "></span><div class="ph"><img src="photos/us-7.jpg" alt=""></div><div class="cap">Drake nightty, got smashed then ... hey baby</div></div>
+  <div class="drag pol small filled" style="left: 23.5938%; top: 67.5774%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/us-8.jpg" alt=""></div><div class="cap">yi fangggg, talked about how we felt no stress this day. photo moments before disaster.</div></div>
+  <div class="drag pol filled" style="left: 62.4792%; top: 34.1302%; --r: 2deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-9.jpg" alt=""></div><div class="cap">Laughy drinks</div></div>
+
+  <!-- photo wall : someday -->
+  <div class="drag pol small filled" style="left: 44.6354%; top: 7.53643%; --r: -2deg;"><span class="tape "></span><div class="ph"><img src="photos/someday-1.jpg" alt=""></div><div class="cap">Somone loves mee!!! we laughy</div></div>
+  <div class="drag pol small filled" style="left: 61.6875%; top: 75.7969%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/someday-2.jpg" alt=""></div><div class="cap">loved doing long distance with you darling. my babies.</div></div>
+  <div class="drag pol small filled" style="left: 35.0625%; top: 58.2878%; --r: -2deg;"><span class="tape pink"></span><div class="ph"><img src="photos/someday-3.jpg" alt=""></div><div class="cap">Our birthday ;) </div></div>
+  <div class="drag pol small filled" style="left: 49.25%; top: 33.9709%; --r: 2deg; z-index: 11;" data-moved="false"><span class="tape "></span><div class="ph"><img src="photos/someday-4.jpg" alt=""></div><div class="cap">Last time i saw my baby, sleepign on me in the car</div></div>
+  <div class="drag pol small filled" style="left: 2.625%; top: 37.204%; --r: -2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/someday-5.jpg" alt=""></div><div class="cap">our future doggyy </div></div>
+
+  <!-- right column notes -->
+  <div class="drag note pink" style="left: 66.1354%; top: 13.8889%; --r: 2deg;"><b>next time we're together</b><div>I think you know the plan for oct 1st.</div></div>
+  <div class="drag note letter" id="letter" style="left: 29.5625%; top: 38.388%; --r: -2deg; width: 210px; z-index: 12;" data-moved="false"><b>a message</b><div></div><div class="hint">click to open ↗</div></div>
+  <!-- golden retriever, backwards cap (bubble to the left in the corner) -->
+  <div class="drag stk poke" id="dog" style="left:90%;top:1%;--r:-6deg">
+    <div class="msg" style="left:auto;right:100%">kum kum</div>
+    <svg viewBox="0 0 130 120" fill="none" stroke="#3a3a3a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M28 40 C10 40 8 78 20 88 C28 94 34 84 34 68 Z" fill="#c9922e"/>
+      <path d="M92 40 C110 40 112 78 100 88 C92 94 86 84 86 68 Z" fill="#c9922e"/>
+      <path d="M60 26 C36 26 26 46 28 68 C30 96 44 112 60 112 C76 112 90 96 92 68 C94 46 84 26 60 26Z" fill="#e6b85c"/>
+      <path d="M30 40 C32 14 88 14 90 40 Z" fill="#2f4a63"/>
+      <path d="M30 40 L90 40" stroke-width="3"/>
+      <path d="M88 30 C102 26 116 26 124 30 C126 34 124 38 120 40 C110 42 98 42 88 41 Z" fill="#2f4a63"/><path d="M90 41 C100 39 112 39 121 38" stroke="#1b2a3a" stroke-width="2"/>
+      <path d="M58 16 q4 -6 8 0" stroke="#ffd58a"/>
+      <path d="M60 76 C48 76 40 84 40 92 C40 102 50 108 60 108 C70 108 80 102 80 92 C80 84 72 76 60 76Z" fill="#f3d99a"/>
+      <circle cx="46" cy="62" r="4" fill="#3a3a3a"/><circle cx="74" cy="62" r="4" fill="#3a3a3a"/>
+      <path d="M53 80 L67 80 L60 88 Z" fill="#3a3a3a"/>
+      <path d="M60 88 v8 M52 96 q8 6 16 0"/>
+      <path d="M56 100 C56 108 58 114 62 114 C66 114 66 108 66 100 Z" fill="#e6a2ad"/>
+    </svg>
+  </div>
+
+  <!-- snow leopard -->
+  <div class="drag stk poke" id="leo" style="left:60%;top:63%;--r:4deg;width:130px">
+    <div class="msg">mrrp</div>
+    <svg viewBox="0 0 160 120" fill="none" stroke="#3a3a3a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M110 90 C140 96 156 80 148 60 C144 50 132 52 130 62 C128 72 140 76 144 70" stroke-width="7" stroke="#dfe3e6"/>
+      <path d="M110 90 C140 96 156 80 148 60 C144 50 132 52 130 62 C128 72 140 76 144 70" stroke-width="3"/>
+      <path d="M40 62 C30 40 34 26 50 24 L58 30 L96 30 L104 24 C120 26 124 40 114 62 C126 74 122 100 96 104 L58 104 C32 100 28 74 40 62Z" fill="#dfe3e6"/>
+      <circle cx="46" cy="30" r="9" fill="#dfe3e6"/><circle cx="108" cy="30" r="9" fill="#dfe3e6"/>
+      <circle cx="46" cy="30" r="4" fill="#e6a2ad" stroke="none"/><circle cx="108" cy="30" r="4" fill="#e6a2ad" stroke="none"/>
+      <circle cx="62" cy="58" r="4.5" fill="#7fb0a0"/><circle cx="92" cy="58" r="4.5" fill="#7fb0a0"/>
+      <circle cx="63" cy="57" r="1.5" fill="#3a3a3a" stroke="none"/><circle cx="93" cy="57" r="1.5" fill="#3a3a3a" stroke="none"/>
+      <path d="M72 70 L82 70 L77 76 Z" fill="#3a3a3a"/>
+      <path d="M77 76 q-6 6 -12 3 M77 76 q6 6 12 3"/>
+      <path d="M48 76 l-14 -3 M48 80 l-15 2 M106 76 l14 -3 M106 80 l15 2" stroke-width="2"/>
+      <g fill="none" stroke="#6b7684" stroke-width="2"><circle cx="48" cy="48" r="4"/><circle cx="106" cy="48" r="4"/><circle cx="56" cy="92" r="4"/><circle cx="98" cy="92" r="4"/><circle cx="77" cy="42" r="3"/></g>
+    </svg>
+  </div>
+
+  <!-- peregrine (right edge) -->
+  <div class="drag stk poke" id="falc" style="left:94%;top:40%;--r:6deg">
+    <div class="msg" style="left:auto;right:100%">hey p</div>
+    <svg viewBox="0 0 120 110" fill="none" stroke="#3a3a3a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M60 15 C45 15 35 30 38 50 L40 95 L60 105 L80 95 L82 50 C85 30 75 15 60 15Z" fill="#dfe6ec"/>
+      <path d="M38 50 C20 55 15 80 25 100 L40 95Z" fill="#2f4a63"/>
+      <path d="M82 50 C100 55 105 80 95 100 L80 95Z" fill="#2f4a63"/>
+      <path d="M40 20 C35 30 40 45 48 42 L60 40 L72 42 C80 45 85 30 80 20 C75 12 45 12 40 20Z" fill="#2f4a63"/>
+      <circle cx="51" cy="32" r="3" fill="#ffd58a"/><circle cx="69" cy="32" r="3" fill="#ffd58a"/>
+      <path d="M56 40 L64 40 L60 48 Z" fill="#e0a458"/>
+      <path d="M50 65 q10 4 20 0 M52 75 q8 4 16 0 M54 85 q6 4 12 0" stroke="#7a8791" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <!-- little hearts tucked in the gaps -->
+  <div class="drag stk sm" style="left:22%;top:4%;--r:15deg"><svg viewBox="0 0 60 60"><path d="M30 52 C10 38 2 26 8 16 C13 8 24 10 30 18 C36 10 47 8 52 16 C58 26 50 38 30 52Z" fill="#e6a2ad" stroke="#3a3a3a" stroke-width="2.5"/></svg></div>
+  <div class="drag stk sm" style="left:80%;top:66%;--r:-18deg"><svg viewBox="0 0 60 60"><path d="M30 52 C10 38 2 26 8 16 C13 8 24 10 30 18 C36 10 47 8 52 16 C58 26 50 38 30 52Z" fill="#ffd58a" stroke="#3a3a3a" stroke-width="2.5"/></svg></div>
+  <div class="drag stk sm" style="left:21%;top:63%;--r:10deg"><svg viewBox="0 0 60 60" stroke="#2f4a63" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M30 5v50M5 30h50M12 12l36 36M48 12L12 48"/><circle cx="30" cy="30" r="5" fill="#fff"/></svg></div>
+</div>
+
+<!-- letter full-screen overlay -->
+<div id="letterFull" class="">
+  <div class="paper" onclick="event.stopPropagation()">
+    <h2>Hey p</h2>
+    <p>These last 6 months have been some of the best in my life. We first kissed 6 months ago tommorow. And exactly 3 months ago, i made the best decision ever. So grateful to have you p. I love you, always. I hope you like this. Excited to enjoy you fully next month.</p>
+    <p></p>
+    <p>N</p>
+    <div class="close">click outside to close</div>
+  </div>
+</div>
+
+<!-- photo lightbox -->
+<div id="lightbox"><img alt=""><div class="cap"></div></div>
+
+<script>
+/* ---- edit these ---- */
+const PASSWORD = "baby";      // change me
+const FROM = "2026-09-07";    // counter start date
+const TO   = "2026-10-01";    // counter end date
+/* -------------------- */
+
+/* days counter */
+const _from=new Date(FROM+"T00:00:00"), _to=new Date(TO+"T00:00:00");
+const _fmt=d=>d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+document.getElementById("days").textContent=Math.round((_to-_from)/864e5);
+document.getElementById("range").textContent=_fmt(_from)+" – "+_fmt(_to);
+
+/* ---------- retro terminal intro + password gate ---------- */
+const lock=document.getElementById("lock"),pw=document.getElementById("pw"),
+      win=document.getElementById("win"),err=document.getElementById("err");
+
+function tryUnlock(){
+  if(pw.value.trim().toLowerCase()===PASSWORD){ lock.classList.add("hide"); }
+  else{ err.textContent="Incorrect password. Try again."; win.classList.add("shake");
+        setTimeout(()=>win.classList.remove("shake"),300); pw.select(); }
+}
+document.getElementById("ok").addEventListener("click",tryUnlock);
+document.getElementById("cancel").addEventListener("click",()=>{pw.value="";pw.focus();});
+pw.addEventListener("keydown",e=>{ if(e.key==="Enter")tryUnlock(); });
+
+/* drag the password window by its title bar */
+(function(){
+  const bar=document.getElementById("winbar"); let sx,sy,ox,oy,on=false;
+  bar.addEventListener("pointerdown",e=>{
+    on=true; win.setPointerCapture(e.pointerId);
+    const r=win.getBoundingClientRect(); ox=r.left; oy=r.top;
+    win.style.left=ox+"px"; win.style.top=oy+"px"; win.style.right="auto";
+    sx=e.clientX; sy=e.clientY;
+    bar.onpointermove=ev=>{ if(!on)return; win.style.left=(ox+ev.clientX-sx)+"px"; win.style.top=(oy+ev.clientY-sy)+"px"; };
+    bar.onpointerup=()=>{ on=false; bar.onpointermove=null; };
+  });
+})();
+
+/* terminal engine */
+const scr=document.getElementById("scr"), tin=document.getElementById("tin"),
+      inrow=document.getElementById("inrow"), promptEl=document.getElementById("prompt");
+window.__fast=false;
+document.getElementById("skip").addEventListener("click",()=>{ window.__fast=true; document.getElementById("skip").style.display="none"; tin.focus(); });
+const down=()=>{ scr.scrollTop=scr.scrollHeight; };
+const sleep=ms=>new Promise(r=>setTimeout(r, window.__fast?Math.min(ms,15):ms));
+function line(txt){ const d=document.createElement("div"); d.className="ln"; d.textContent=txt||""; scr.appendChild(d); down(); return d; }
+async function type(txt){
+  const d=line("");
+  if(window.__fast){ d.textContent=txt; down(); return; }
+  for(const ch of txt){ d.textContent+=ch; down(); await sleep(14); }
+}
+let resolver=null;
+function input(label){
+  promptEl.textContent=label; inrow.classList.add("on"); tin.value=""; setTimeout(()=>tin.focus(),0);
+  return new Promise(res=>{ resolver=res; });
+}
+tin.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && resolver){
+    const v=tin.value; line(promptEl.textContent+" "+v); tin.value="";
+    const r=resolver; resolver=null; inrow.classList.remove("on"); r(v);
+  }
+});
+
+/* the cryptic */
+const answer="baby";
+const clue='Firstly, British Airways flights to Bangalore are so long. "Why!" says an impatient Nikhil to his Ameya. (4)';
+const definition="Ameya. Maybe an endearing synonym";
+const fodder='"Firstly" is your instruction. Capitals invovled. There is also a homophone indicator';
+const letters=answer.split(""); let shown=0;
+function winGlow(){ win.style.boxShadow="0 0 0 3px #ffd54a, 2px 2px 0 #000"; pw.focus(); }
+
+async function run(){
+  await sleep(400);
+  await type("hey p, you know im into all this coding stuff, so i thought id do this here"); await sleep(2000);
+  await type("guess what today is"); await sleep(3000);
+  await type("check the date on your phone and see if you can work it out"); await sleep(3000);
+  await type("I know we dont have an official offical date, but lets set it today"); await sleep(3000);
+  await type("because exactly 3 months ago, i came back to you in society after realising how stupid i was being and how much i loved you and finalllyyy made this offical"); await sleep(4000);
+  await type("and it was the best decision i ever made"); await sleep(4000);
+  await type("and this makes this our 3 month aniversary, and tommorow is also the 6th month aniversary of when we first kissed"); await sleep(2000);
+  await type("good things take time, but here is how many days earlier i would have made it now:");
+  const c=line("");
+  for(let i=0;i<100;i++){ c.textContent=String(Math.pow(i,4)); down(); await sleep(window.__fast?2:50); }
+  await type("you get the point");
+  await type("anyway, i made you a little something to commemorate it, wanna see?");
+  let a=(await input("yes or no:")).trim().toLowerCase();
+  if(a==="yes") await type("sweet, message me after"); else await type("nooooooooooooo, you have to anyway");
+  await sleep(3000);
+  await type("Here is a website link, but there is a password"); await sleep(2000);
+  await type("to get the password you have to solve this cryptic I made myself for you (par 1 million, get ready)");
+  let rd=(await input("ready?:")).trim().toLowerCase();
+  if(rd!=="yes") await type("nooooooooooooo, you have to anyway");
+  line("");
+  await type(clue);
+  line("");
+  await type('Type "fodder", "definition" or "letter" for help. Or just type your answer.');
+  line("");
+  while(true){
+    const g=(await input(">")).trim().toLowerCase();
+    if(g===answer){ line(""); await type("hey baby. I love you"); await type("go check out the website now  →  (psst: that word is the password)"); winGlow(); break; }
+    else if(["fodder","fod","f"].includes(g)) await type(fodder);
+    else if(["definition","def","d"].includes(g)) await type(definition);
+    else if(["letter","hint","l","h"].includes(g)){
+      if(shown<letters.length){ shown++; const rev=letters.slice(0,shown).concat(Array(letters.length-shown).fill("_")).join(" "); await type(rev+"   ("+shown+"/"+letters.length+")"); }
+      else await type("that's all the letters. you've basically got it 😉");
+    }
+    else await type("nope, that's not it. try again and you can ask for fodder definition or letter");
+  }
+}
+run();
+
+/* ---------- board ---------- */
+const board=document.getElementById("board");
+const saved=JSON.parse(localStorage.getItem("collage-pos")||"{}");
+let z=10;
+const SCALE=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--scale'))||1;
+document.querySelectorAll(".drag").forEach((el,i)=>{
+  if(saved[i]){el.style.left=saved[i].l;el.style.top=saved[i].t;}
+  let sx,sy,ox,oy,moved=false;
+  el.addEventListener("pointerdown",e=>{
+    if(e.target.tagName==="IFRAME")return;
+    el.setPointerCapture(e.pointerId);
+    sx=e.clientX;sy=e.clientY;ox=el.offsetLeft;oy=el.offsetTop;moved=false;
+    el.style.zIndex=++z;
+    el.onpointermove=ev=>{
+      const dx=(ev.clientX-sx)/SCALE,dy=(ev.clientY-sy)/SCALE;
+      if(Math.abs(dx)+Math.abs(dy)>4)moved=true;
+      el.style.left=(ox+dx)/board.clientWidth*100+"%";el.style.top=(oy+dy)/board.clientHeight*100+"%";
+    };
+    el.onpointerup=()=>{
+      el.onpointermove=null;
+      saved[i]={l:el.style.left,t:el.style.top};
+      localStorage.setItem("collage-pos",JSON.stringify(saved));
+      el.dataset.moved=moved;
+    };
+  });
+});
+
+/* image fallback: hatch until the real file exists, photo when it does */
+document.querySelectorAll(".pol img").forEach(img=>{
+  const p=img.closest(".pol");
+  const mark=()=>{ if(img.naturalWidth>0)p.classList.add("filled"); };
+  img.addEventListener("load",mark);
+  img.addEventListener("error",()=>p.classList.remove("filled"));
+  if(img.complete)mark();
+});
+
+/* animals talk */
+document.querySelectorAll(".poke").forEach(a=>{
+  a.addEventListener("click",()=>{
+    if(a.dataset.moved==="true")return;
+    a.classList.add("talk");
+    a.animate([{transform:`rotate(var(--r)) scale(1)`},{transform:`rotate(var(--r)) scale(1.15)`},{transform:`rotate(var(--r)) scale(1)`}],{duration:300});
+    setTimeout(()=>a.classList.remove("talk"),1500);
+  });
+});
+
+/* click a photo to expand it */
+const lightbox=document.getElementById("lightbox"),
+      lbImg=lightbox.querySelector("img"), lbCap=lightbox.querySelector(".cap");
+document.querySelectorAll(".pol").forEach(pl=>{
+  pl.addEventListener("click",()=>{
+    if(pl.dataset.moved==="true")return;
+    if(!pl.classList.contains("filled"))return;
+    const im=pl.querySelector("img"); lbImg.src=im.currentSrc||im.src;
+    const cap=pl.querySelector(".cap"); lbCap.textContent=cap?cap.textContent:"";
+    lightbox.classList.add("open");
+  });
+});
+lightbox.addEventListener("click",()=>lightbox.classList.remove("open"));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape")lightbox.classList.remove("open"); });
+
+/* letter opens full screen (click, not drag) */
+const letter=document.getElementById("letter"),letterFull=document.getElementById("letterFull");
+letter.addEventListener("click",()=>{ if(letter.dataset.moved!=="true")letterFull.classList.add("open"); });
+letterFull.addEventListener("click",()=>letterFull.classList.remove("open"));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape")letterFull.classList.remove("open"); });
+</script>
+</body>
+</html>
