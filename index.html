@@ -178,7 +178,7 @@ body{font-family:'Nunito',sans-serif;font-size:15px;color:#3a3a3a;background:#0b
 <!-- ================= INTRO TERMINAL + PASSWORD ================= -->
 <div id="lock">
   <div class="term">
-    <div class="tb"><span>C:\love\hey-p.exe</span><span class="x">&times;</span></div>
+    <div class="tb"><span>C:\hey-p</span><span class="x">&times;</span></div>
     <div class="scr" id="scr"></div>
     <div class="inrow" id="inrow"><span id="prompt">&gt;</span><input id="tin" autocomplete="off" spellcheck="false"><span id="skip" title="skip the waiting">skip ▸</span></div>
   </div>
@@ -406,7 +406,7 @@ async function run(){
   line("");
   while(true){
     const g=(await input(">")).trim().toLowerCase();
-    if(g===answer){ line(""); await type("hey baby. I love you"); await type("go check out the website now"); winGlow(); break; }
+    if(g===answer){ line(""); await type("oh hey baby"); await type("go check out the website now"); winGlow(); break; }
     else if(["fodder","fod","f"].includes(g)) await type(fodder);
     else if(["definition","def","d"].includes(g)) await type(definition);
     else if(["letter","hint","l","h"].includes(g)){
