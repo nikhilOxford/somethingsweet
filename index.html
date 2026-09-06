@@ -217,7 +217,7 @@ body{font-family:'Nunito',sans-serif;font-size:15px;color:#3a3a3a;background:#0b
   <!-- photo wall : us -->
   <div class="drag pol big filled" style="left: 82.9896%; top: 6.32969%; --r: -2deg;"><span class="tape "></span><div class="ph"><img src="photos/us-1.jpg" alt=""></div><div class="cap">Pizza dateee</div></div>
   <div class="drag pol filled" style="left: 20.25%; top: 0.68306%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/us-2.jpg" alt=""></div><div class="cap">Face maskkss</div></div>
-  <div class="drag pol small filled" style="left: 55.0625%; top: 11.316%; --r: 3deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-3.jpg" alt=""></div><div class="cap">Somone got posted!! me and my new freind</div></div>
+  <div class="drag pol small filled" style="left: 55.0625%; top: 11.316%; --r: 3deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-3.jpg" alt=""></div><div class="cap">Someone got posted!! me and my new freind</div></div>
   <div class="drag pol filled" style="left: 48.1667%; top: 57.9235%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/us-4.jpg" alt=""></div><div class="cap">my snack</div></div>
   <div class="drag pol big filled" style="left: 74%; top: 31.3752%; --r: -2deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-5.jpg" alt=""></div><div class="cap">My baby came back for my mods</div></div>
   <div class="drag pol filled" style="left: 75.7917%; top: 75.3415%; --r: 3deg;"><span class="tape "></span><div class="ph"><img src="photos/us-6.jpg" alt=""></div><div class="cap">Meeting the mother... I look like im about to eat you</div></div>
@@ -226,7 +226,7 @@ body{font-family:'Nunito',sans-serif;font-size:15px;color:#3a3a3a;background:#0b
   <div class="drag pol filled" style="left: 62.4792%; top: 34.1302%; --r: 2deg;"><span class="tape pink"></span><div class="ph"><img src="photos/us-9.jpg" alt=""></div><div class="cap">Laughy drinks</div></div>
 
   <!-- photo wall : someday -->
-  <div class="drag pol small filled" style="left: 44.6354%; top: 7.53643%; --r: -2deg;"><span class="tape "></span><div class="ph"><img src="photos/someday-1.jpg" alt=""></div><div class="cap">Somone loves mee!!! we laughy</div></div>
+  <div class="drag pol small filled" style="left: 44.6354%; top: 7.53643%; --r: -2deg;"><span class="tape "></span><div class="ph"><img src="photos/someday-1.jpg" alt=""></div><div class="cap">Someone loves mee!!! we laughy</div></div>
   <div class="drag pol small filled" style="left: 61.6875%; top: 75.7969%; --r: 2deg;"><span class="tape blue"></span><div class="ph"><img src="photos/someday-2.jpg" alt=""></div><div class="cap">loved doing long distance with you darling. my babies.</div></div>
   <div class="drag pol small filled" style="left: 35.0625%; top: 58.2878%; --r: -2deg;"><span class="tape pink"></span><div class="ph"><img src="photos/someday-3.jpg" alt=""></div><div class="cap">Our birthday ;) </div></div>
   <div class="drag pol small filled" style="left: 49.25%; top: 33.9709%; --r: 2deg; z-index: 11;" data-moved="false"><span class="tape "></span><div class="ph"><img src="photos/someday-4.jpg" alt=""></div><div class="cap">Last time i saw my baby, sleepign on me in the car</div></div>
@@ -386,7 +386,7 @@ async function run(){
   await type("I know we dont have an official offical date, but lets set it today"); await sleep(3000);
   await type("because exactly 3 months ago, i came back to you in society after realising how stupid i was being and how much i loved you and finalllyyy made this offical"); await sleep(4000);
   await type("and it was the best decision i ever made"); await sleep(4000);
-  await type("and this makes this our 3 month aniversary, and tommorow is also the 6th month aniversary of when we first kissed"); await sleep(2000);
+  await type("and this makes this our 3 month aniversary, and tommorow is also the 6th month aniversary of when we first kissed"); await sleep(3000);
   await type("good things take time, but here is how many days earlier i would have made it now:");
   const c=line("");
   for(let i=0;i<100;i++){ c.textContent=String(Math.pow(i,4)); down(); await sleep(window.__fast?2:50); }
@@ -406,7 +406,7 @@ async function run(){
   line("");
   while(true){
     const g=(await input(">")).trim().toLowerCase();
-    if(g===answer){ line(""); await type("hey baby. I love you"); await type("go check out the website now  →  (psst: that word is the password)"); winGlow(); break; }
+    if(g===answer){ line(""); await type("hey baby. I love you"); await type("go check out the website now"); winGlow(); break; }
     else if(["fodder","fod","f"].includes(g)) await type(fodder);
     else if(["definition","def","d"].includes(g)) await type(definition);
     else if(["letter","hint","l","h"].includes(g)){
